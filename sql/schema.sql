@@ -50,3 +50,6 @@ FROM orders o
 JOIN customers c ON o.customer_id = c.customer_id
 JOIN order_items oi ON o.order_id = oi.order_id
 GROUP BY o.order_id;
+
+INSERT IGNORE INTO categories (category_id, name) VALUES (1, 'Electronics');
+INSERT IGNORE INTO customers (customer_id, first_name, last_name, email) VALUES (1, 'John', 'Doe', 'john@school.cz');

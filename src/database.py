@@ -50,3 +50,46 @@ class DatabaseConnection:
                 raise e
 
         return DatabaseConnection._instance
+
+    @staticmethod
+    def initialize_database():
+        print("Checking database status...")
+        try:
+            db_config = DatabaseConnection._load_config()
+            db_name = db_config['database']
+
+            conn = mysql.connector.connect(
+                host=db_config['host'],
+                user=db_config['user'],
+                password=db_config['password'],
+                port=int(db_config.get('port', 3306))
+            )
+            cursor = conn.cursor()
+
+            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+            conn.database = db_name
+
+            cursor.execute("SHOW TABLES LIKE 'products'")
+            if not cursor.fetchone():
+                print(f"Database '{db_name}' empty. Importing schema...")
+                base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                schema_path = os.path.join(base_path, 'sql', 'schema.sql')
+
+                if not os.path.exists(schema_path):
+                    raise FileNotFoundError(f"Schema file not found at: {schema_path}")
+
+                with open(schema_path, 'r') as file:
+                    commands = file.read().split(';')
+                    for command in commands:
+                        if command.strip():
+                            cursor.execute(command)
+                conn.commit()
+                print("Schema imported successfully.")
+            else:
+                print("Database ready.")
+
+            cursor.close()
+            conn.close()
+        except Exception as error:
+            print(f"CRITICAL INIT ERROR: {error}")
+            raise error

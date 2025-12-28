@@ -43,7 +43,7 @@ class DatabaseConnection:
                     connection_timeout=5
                 )
             except mysql.connector.Error as err:
-                if err.errno == 1049:  # Unknown database
+                if err.errno == 1049:
                     return None
                 raise Exception(f"Database Connection Failed: {err}")
             except Exception as e:

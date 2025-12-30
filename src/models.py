@@ -25,6 +25,11 @@ class Product(ActiveRecord):
     def save(self):
         self.validate()
         connection = DatabaseConnection.get_connection()
+        try:
+            connection.rollback()
+        except:
+            pass
+
         cursor = connection.cursor()
         try:
             if self.product_id:
@@ -49,6 +54,12 @@ class Order(ActiveRecord):
             raise ValueError("Cannot create empty order")
 
         connection = DatabaseConnection.get_connection()
+
+        try:
+            connection.rollback()
+        except:
+            pass
+
         connection.start_transaction()
         cursor = connection.cursor()
         try:

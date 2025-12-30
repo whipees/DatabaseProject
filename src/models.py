@@ -54,7 +54,6 @@ class Order(ActiveRecord):
             raise ValueError("Cannot create empty order")
 
         connection = DatabaseConnection.get_connection()
-
         try:
             connection.rollback()
         except:
@@ -63,13 +62,16 @@ class Order(ActiveRecord):
         connection.start_transaction()
         cursor = connection.cursor()
         try:
+            # Check Customer existence
             cursor.execute("SELECT customer_id FROM customers WHERE customer_id = %s", (self.customer_id,))
             if not cursor.fetchone():
                 raise ValueError(f"Customer ID {self.customer_id} does not exist")
 
+            # Create Order
             cursor.execute("INSERT INTO orders (customer_id, status) VALUES (%s, 'PENDING')", (self.customer_id,))
             order_id = cursor.lastrowid
 
+            # Process Items
             for item in self.items:
                 product_id = item.get('product_id')
                 quantity = item.get('quantity')
@@ -77,6 +79,7 @@ class Order(ActiveRecord):
                 if not product_id or not quantity or int(quantity) <= 0:
                     raise ValueError("Invalid product ID or quantity")
 
+                # Check Stock and Price
                 cursor.execute("SELECT price, stock_quantity FROM products WHERE product_id=%s", (product_id,))
                 result = cursor.fetchone()
                 if not result:
@@ -86,10 +89,12 @@ class Order(ActiveRecord):
                 if stock < int(quantity):
                     raise ValueError(f"Insufficient stock for product {product_id}. Available: {stock}")
 
+                # Insert Item with Unit Price
                 cursor.execute(
                     "INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (%s, %s, %s, %s)",
                     (order_id, product_id, quantity, float(price)))
 
+                # Update Stock
                 cursor.execute("UPDATE products SET stock_quantity=%s WHERE product_id=%s",
                                (stock - int(quantity), product_id))
 
@@ -98,5 +103,22 @@ class Order(ActiveRecord):
         except Exception as error:
             connection.rollback()
             raise error
+        finally:
+            cursor.close()
+
+    @staticmethod
+    def update_status(order_id, new_status):
+        valid_statuses = ['PENDING', 'PAID', 'SHIPPED', 'CANCELLED']
+        if new_status not in valid_statuses:
+            raise ValueError(f"Invalid status. Must be one of: {valid_statuses}")
+
+        connection = DatabaseConnection.get_connection()
+        cursor = connection.cursor()
+        try:
+            cursor.execute("UPDATE orders SET status = %s WHERE order_id = %s", (new_status, order_id))
+            connection.commit()
+        except Exception as e:
+            connection.rollback()
+            raise e
         finally:
             cursor.close()

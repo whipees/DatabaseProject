@@ -5,11 +5,12 @@ import os
 from src.database import DatabaseConnection
 from src.models import Order, Product
 
+
 class ApplicationGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Store Manager System (D2)")
-        self.root.geometry("900x600")
+        self.root.geometry("1000x700")
 
         DatabaseConnection.initialize_database()
 
@@ -18,6 +19,7 @@ class ApplicationGUI:
 
         self.setup_order_tab()
         self.setup_products_tab()
+        self.setup_customers_tab()
         self.setup_report_tab()
         self.setup_import_tab()
 
@@ -25,7 +27,7 @@ class ApplicationGUI:
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="New Order")
 
-        ttk.Label(frame, text="Customer ID (Default: 1):").pack(pady=5)
+        ttk.Label(frame, text="Customer ID (See Customers Tab):").pack(pady=5)
         self.customer_entry = ttk.Entry(frame)
         self.customer_entry.pack()
 
@@ -41,7 +43,7 @@ class ApplicationGUI:
 
     def setup_products_tab(self):
         frame = ttk.Frame(self.notebook)
-        self.notebook.add(frame, text="Products Inventory")
+        self.notebook.add(frame, text="Products")
 
         ttk.Button(frame, text="Refresh Stock", command=lambda: self.load_products(frame)).pack(pady=10)
 
@@ -67,31 +69,66 @@ class ApplicationGUI:
 
         self.load_products(frame)
 
+    def setup_customers_tab(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Customers")
+
+        ttk.Button(frame, text="Refresh Customers", command=lambda: self.load_customers(frame)).pack(pady=10)
+
+        columns = ('ID', 'First Name', 'Last Name', 'Email')
+        self.customers_tree = ttk.Treeview(frame, columns=columns, show='headings')
+
+        self.customers_tree.heading('ID', text='ID')
+        self.customers_tree.column('ID', width=50)
+
+        self.customers_tree.heading('First Name', text='First Name')
+        self.customers_tree.heading('Last Name', text='Last Name')
+        self.customers_tree.heading('Email', text='Email')
+
+        self.customers_tree.pack(expand=True, fill='both')
+
+        self.load_customers(frame)
+
     def setup_report_tab(self):
         frame = ttk.Frame(self.notebook)
-        self.notebook.add(frame, text="Sales Report")
+        self.notebook.add(frame, text="Orders & Status")
 
-        ttk.Button(frame, text="Refresh Report", command=lambda: self.load_report(frame)).pack(pady=10)
+        controls = ttk.Frame(frame)
+        controls.pack(pady=10)
+
+        ttk.Button(controls, text="Refresh List", command=lambda: self.load_report(frame)).pack(side='left', padx=10)
+
+        ttk.Label(controls, text="Change Status To:").pack(side='left', padx=5)
+
+        self.status_var = tkinter.StringVar()
+        self.status_combo = ttk.Combobox(controls, textvariable=self.status_var, state="readonly")
+        self.status_combo['values'] = ('PENDING', 'PAID', 'SHIPPED', 'CANCELLED')
+        self.status_combo.current(0)
+        self.status_combo.pack(side='left', padx=5)
+
+        ttk.Button(controls, text="Update Status", command=self.update_order_status).pack(side='left', padx=5)
 
         columns = ('ID', 'Customer', 'Date', 'Status', 'Total')
-        self.tree = ttk.Treeview(frame, columns=columns, show='headings')
+        self.report_tree = ttk.Treeview(frame, columns=columns, show='headings')
 
-        self.tree.heading('ID', text='Order ID')
-        self.tree.column('ID', width=50)
+        self.report_tree.heading('ID', text='Order ID')
+        self.report_tree.column('ID', width=50)
 
-        self.tree.heading('Customer', text='Customer Name')
-        self.tree.column('Customer', width=200)
+        self.report_tree.heading('Customer', text='Customer Name')
+        self.report_tree.column('Customer', width=200)
 
-        self.tree.heading('Date', text='Date')
-        self.tree.column('Date', width=150)
+        self.report_tree.heading('Date', text='Date')
+        self.report_tree.column('Date', width=150)
 
-        self.tree.heading('Status', text='Status')
-        self.tree.column('Status', width=100)
+        self.report_tree.heading('Status', text='Status')
+        self.report_tree.column('Status', width=100)
 
-        self.tree.heading('Total', text='Total Amount')
-        self.tree.column('Total', width=100)
+        self.report_tree.heading('Total', text='Total Amount')
+        self.report_tree.column('Total', width=100)
 
-        self.tree.pack(expand=True, fill='both')
+        self.report_tree.pack(expand=True, fill='both')
+
+        self.load_report(frame)
 
     def setup_import_tab(self):
         frame = ttk.Frame(self.notebook)
@@ -123,6 +160,19 @@ class ApplicationGUI:
         else:
             messagebox.showwarning("Validation Error", "All fields must be filled.")
 
+    def update_order_status(self):
+        selected_item = self.report_tree.selection()
+        if selected_item:
+            item_data = self.report_tree.item(selected_item)
+            order_id = item_data['values'][0]
+            new_status = self.status_var.get()
+
+            Order.update_status(order_id, new_status)
+            messagebox.showinfo("Success", f"Order {order_id} updated to {new_status}")
+            self.load_report(None)
+        else:
+            messagebox.showwarning("Selection Error", "Please select an order first.")
+
     def load_products(self, frame):
         for item in self.products_tree.get_children():
             self.products_tree.delete(item)
@@ -136,17 +186,30 @@ class ApplicationGUI:
                 self.products_tree.insert('', 'end', values=row)
             cursor.close()
 
-    def load_report(self, frame):
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+    def load_customers(self, frame):
+        for item in self.customers_tree.get_children():
+            self.customers_tree.delete(item)
 
         connection = DatabaseConnection.get_connection()
         if connection:
             cursor = connection.cursor()
-            cursor.execute("SELECT * FROM view_order_summary")
+            cursor.execute("SELECT customer_id, first_name, last_name, email FROM customers")
             rows = cursor.fetchall()
             for row in rows:
-                self.tree.insert('', 'end', values=row)
+                self.customers_tree.insert('', 'end', values=row)
+            cursor.close()
+
+    def load_report(self, frame):
+        for item in self.report_tree.get_children():
+            self.report_tree.delete(item)
+
+        connection = DatabaseConnection.get_connection()
+        if connection:
+            cursor = connection.cursor()
+            cursor.execute("SELECT * FROM view_order_summary ORDER BY order_id DESC")
+            rows = cursor.fetchall()
+            for row in rows:
+                self.report_tree.insert('', 'end', values=row)
             cursor.close()
 
     def import_json(self):

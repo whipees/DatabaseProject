@@ -5,7 +5,6 @@ import os
 from src.database import DatabaseConnection
 from src.models import Order, Product
 
-
 class ApplicationGUI:
     def __init__(self, root):
         self.root = root
@@ -18,6 +17,7 @@ class ApplicationGUI:
         self.notebook.pack(expand=True, fill='both')
 
         self.setup_order_tab()
+        self.setup_products_tab()
         self.setup_report_tab()
         self.setup_import_tab()
 
@@ -38,6 +38,34 @@ class ApplicationGUI:
         self.quantity_entry.pack()
 
         ttk.Button(frame, text="Create Order (Transaction)", command=self.create_order).pack(pady=20)
+
+    def setup_products_tab(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Products Inventory")
+
+        ttk.Button(frame, text="Refresh Stock", command=lambda: self.load_products(frame)).pack(pady=10)
+
+        columns = ('ID', 'Name', 'Price', 'Stock', 'Category')
+        self.products_tree = ttk.Treeview(frame, columns=columns, show='headings')
+
+        self.products_tree.heading('ID', text='ID')
+        self.products_tree.column('ID', width=50)
+
+        self.products_tree.heading('Name', text='Product Name')
+        self.products_tree.column('Name', width=200)
+
+        self.products_tree.heading('Price', text='Price')
+        self.products_tree.column('Price', width=100)
+
+        self.products_tree.heading('Stock', text='Stock Qty')
+        self.products_tree.column('Stock', width=100)
+
+        self.products_tree.heading('Category', text='Category ID')
+        self.products_tree.column('Category', width=100)
+
+        self.products_tree.pack(expand=True, fill='both')
+
+        self.load_products(frame)
 
     def setup_report_tab(self):
         frame = ttk.Frame(self.notebook)
@@ -88,10 +116,25 @@ class ApplicationGUI:
                 self.customer_entry.delete(0, tkinter.END)
                 self.product_entry.delete(0, tkinter.END)
                 self.quantity_entry.delete(0, tkinter.END)
+
+                self.load_products(None)
             else:
                 messagebox.showwarning("Validation Error", "Quantity must be greater than 0.")
         else:
             messagebox.showwarning("Validation Error", "All fields must be filled.")
+
+    def load_products(self, frame):
+        for item in self.products_tree.get_children():
+            self.products_tree.delete(item)
+
+        connection = DatabaseConnection.get_connection()
+        if connection:
+            cursor = connection.cursor()
+            cursor.execute("SELECT product_id, name, price, stock_quantity, category_id FROM products")
+            rows = cursor.fetchall()
+            for row in rows:
+                self.products_tree.insert('', 'end', values=row)
+            cursor.close()
 
     def load_report(self, frame):
         for item in self.tree.get_children():
@@ -121,3 +164,4 @@ class ApplicationGUI:
                         success_count += 1
 
                 messagebox.showinfo("Import Result", f"Successfully imported {success_count} products.")
+                self.load_products(None)

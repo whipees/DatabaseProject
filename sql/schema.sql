@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL UNIQUE,
     is_active TINYINT(1) DEFAULT 1
 );
 
@@ -50,6 +50,19 @@ FROM orders o
 JOIN customers c ON o.customer_id = c.customer_id
 JOIN order_items oi ON o.order_id = oi.order_id
 GROUP BY o.order_id;
+
+CREATE OR REPLACE VIEW view_stock_status AS
+SELECT
+    p.name AS product_name,
+    c.name AS category_name,
+    p.stock_quantity,
+    CASE
+        WHEN p.stock_quantity = 0 THEN 'OUT OF STOCK'
+        WHEN p.stock_quantity < 5 THEN 'LOW STOCK'
+        ELSE 'OK'
+    END AS status_label
+FROM products p
+LEFT JOIN categories c ON p.category_id = c.category_id;
 
 INSERT IGNORE INTO categories (category_id, name) VALUES (1, 'Electronics');
 INSERT IGNORE INTO customers (customer_id, first_name, last_name, email) VALUES (1, 'John', 'Doe', 'john@school.cz');

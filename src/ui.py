@@ -1,10 +1,9 @@
 import tkinter
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 import json
 import os
 from src.database import DatabaseConnection
-from src.models import Order, Product, Category
-
+from src.models import Order, Product, Category, Customer
 
 class ApplicationGUI:
     def __init__(self, root):
@@ -45,19 +44,19 @@ class ApplicationGUI:
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Products")
 
-        ttk.Button(frame, text="Refresh Stock", command=lambda: self.load_products(frame)).pack(pady=10)
+        controls = ttk.Frame(frame)
+        controls.pack(pady=10)
+
+        ttk.Button(controls, text="Refresh Stock", command=lambda: self.load_products(frame)).pack(side='left', padx=10)
+        ttk.Button(controls, text="Add Stock (Restock)", command=self.add_product_stock).pack(side='left', padx=10)
 
         columns = ('ID', 'Name', 'Price', 'Stock', 'Category')
         self.products_tree = ttk.Treeview(frame, columns=columns, show='headings')
-
         self.products_tree.heading('ID', text='ID')
-        self.products_tree.column('ID', width=50)
-
         self.products_tree.heading('Name', text='Name')
         self.products_tree.heading('Price', text='Price')
         self.products_tree.heading('Stock', text='Stock')
         self.products_tree.heading('Category', text='Category ID')
-
         self.products_tree.pack(expand=True, fill='both')
         self.load_products(frame)
 
@@ -65,18 +64,31 @@ class ApplicationGUI:
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Customers")
 
-        ttk.Button(frame, text="Refresh Customers", command=lambda: self.load_customers(frame)).pack(pady=10)
+        form_frame = ttk.LabelFrame(frame, text="Add New Customer")
+        form_frame.pack(fill='x', padx=10, pady=10)
+
+        ttk.Label(form_frame, text="First Name:").grid(row=0, column=0, padx=5, pady=5)
+        self.cust_first_entry = ttk.Entry(form_frame)
+        self.cust_first_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        ttk.Label(form_frame, text="Last Name:").grid(row=0, column=2, padx=5, pady=5)
+        self.cust_last_entry = ttk.Entry(form_frame)
+        self.cust_last_entry.grid(row=0, column=3, padx=5, pady=5)
+
+        ttk.Label(form_frame, text="Email:").grid(row=0, column=4, padx=5, pady=5)
+        self.cust_email_entry = ttk.Entry(form_frame)
+        self.cust_email_entry.grid(row=0, column=5, padx=5, pady=5)
+
+        ttk.Button(form_frame, text="Add Customer", command=self.create_customer).grid(row=0, column=6, padx=10, pady=5)
+
+        ttk.Button(frame, text="Refresh Customers", command=lambda: self.load_customers(frame)).pack(pady=5)
 
         columns = ('ID', 'First', 'Last', 'Email')
         self.customers_tree = ttk.Treeview(frame, columns=columns, show='headings')
-
         self.customers_tree.heading('ID', text='ID')
-        self.customers_tree.column('ID', width=50)
-
         self.customers_tree.heading('First', text='First')
         self.customers_tree.heading('Last', text='Last')
         self.customers_tree.heading('Email', text='Email')
-
         self.customers_tree.pack(expand=True, fill='both')
         self.load_customers(frame)
 
@@ -95,30 +107,24 @@ class ApplicationGUI:
         self.status_combo['values'] = ('PENDING', 'PAID', 'SHIPPED', 'CANCELLED')
         self.status_combo.current(0)
         self.status_combo.pack(side='left', padx=5)
-
         ttk.Button(controls_frame, text="Update Status", command=self.update_order_status).pack(side='left', padx=5)
-        ttk.Button(controls_frame, text="DELETE ORDER", command=self.delete_order).pack(side='right', padx=20)
+
+        ttk.Button(controls_frame, text="DELETE ORDER (Transaction)", command=self.delete_order).pack(side='right', padx=20)
 
         columns = ('ID', 'Customer', 'Date', 'Status', 'Total')
         self.report_tree = ttk.Treeview(frame, columns=columns, show='headings')
-
         self.report_tree.heading('ID', text='ID')
-        self.report_tree.column('ID', width=50)
-
         self.report_tree.heading('Customer', text='Customer')
         self.report_tree.heading('Date', text='Date')
         self.report_tree.heading('Status', text='Status')
         self.report_tree.heading('Total', text='Total')
-
         self.report_tree.pack(expand=True, fill='both')
         self.load_report(frame)
 
     def setup_import_tab(self):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Import")
-
-        ttk.Label(frame, text="Expected JSON: [{'category': 'Name', 'name': 'Prod', 'price': 10, 'stock': 5}]").pack(
-            pady=10)
+        ttk.Label(frame, text="Expected JSON: [{'category': 'Name', 'name': 'Prod', 'price': 10, 'stock': 5}]").pack(pady=10)
         ttk.Button(frame, text="Import JSON Data", command=self.import_json).pack(pady=20)
 
     def create_order(self):
@@ -145,13 +151,41 @@ class ApplicationGUI:
         else:
             messagebox.showwarning("Validation Error", "All fields must be filled.")
 
+    def create_customer(self):
+        first = self.cust_first_entry.get()
+        last = self.cust_last_entry.get()
+        email = self.cust_email_entry.get()
+
+        if first and last and email:
+            customer = Customer(first, last, email)
+            customer.save()
+            messagebox.showinfo("Success", "Customer Added!")
+
+            self.cust_first_entry.delete(0, tkinter.END)
+            self.cust_last_entry.delete(0, tkinter.END)
+            self.cust_email_entry.delete(0, tkinter.END)
+            self.load_customers(None)
+        else:
+            messagebox.showwarning("Validation Error", "All fields must be filled.")
+
+    def add_product_stock(self):
+        selected = self.products_tree.selection()
+        if selected:
+            product_id = self.products_tree.item(selected)['values'][0]
+            quantity = simpledialog.askinteger("Restock", "Enter quantity to add:", parent=self.root, minvalue=1)
+
+            if quantity:
+                Product.add_stock(product_id, quantity)
+                messagebox.showinfo("Success", "Stock updated.")
+                self.load_products(None)
+        else:
+            messagebox.showwarning("Warning", "Select a product first.")
+
     def update_order_status(self):
         selected_item = self.report_tree.selection()
         if selected_item:
             order_id = self.report_tree.item(selected_item)['values'][0]
-            new_status = self.status_var.get()
-
-            Order.update_status(order_id, new_status)
+            Order.update_status(order_id, self.status_var.get())
             self.load_report(None)
         else:
             messagebox.showwarning("Selection Error", "Please select an order.")

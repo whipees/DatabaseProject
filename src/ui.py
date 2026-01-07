@@ -179,22 +179,19 @@ class ApplicationGUI:
         cat_val = self.prod_cat_entry.get()
 
         if name and price_val and stock_val and cat_val:
-            try:
-                price = float(price_val)
-                stock = int(stock_val)
-                cat_id = int(cat_val)
+            price = float(price_val)
+            stock = int(stock_val)
+            cat_id = int(cat_val)
 
-                product = Product(name, price, stock, cat_id)
-                product.save()
-                messagebox.showinfo("Success", "Product Added!")
+            product = Product(name, price, stock, cat_id)
+            product.save()
+            messagebox.showinfo("Success", "Product Added!")
 
-                self.prod_name_entry.delete(0, tkinter.END)
-                self.prod_price_entry.delete(0, tkinter.END)
-                self.prod_stock_entry.delete(0, tkinter.END)
-                self.prod_cat_entry.delete(0, tkinter.END)
-                self.load_products(None)
-            except Exception as e:
-                messagebox.showerror("Error", str(e))
+            self.prod_name_entry.delete(0, tkinter.END)
+            self.prod_price_entry.delete(0, tkinter.END)
+            self.prod_stock_entry.delete(0, tkinter.END)
+            self.prod_cat_entry.delete(0, tkinter.END)
+            self.load_products(None)
         else:
             messagebox.showwarning("Validation Error", "All fields must be filled.")
 

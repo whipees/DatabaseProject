@@ -44,6 +44,27 @@ class ApplicationGUI:
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Products")
 
+        form_frame = ttk.LabelFrame(frame, text="Add New Product")
+        form_frame.pack(fill='x', padx=10, pady=10)
+
+        ttk.Label(form_frame, text="Name:").grid(row=0, column=0, padx=5, pady=5)
+        self.prod_name_entry = ttk.Entry(form_frame)
+        self.prod_name_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        ttk.Label(form_frame, text="Price:").grid(row=0, column=2, padx=5, pady=5)
+        self.prod_price_entry = ttk.Entry(form_frame)
+        self.prod_price_entry.grid(row=0, column=3, padx=5, pady=5)
+
+        ttk.Label(form_frame, text="Stock:").grid(row=0, column=4, padx=5, pady=5)
+        self.prod_stock_entry = ttk.Entry(form_frame)
+        self.prod_stock_entry.grid(row=0, column=5, padx=5, pady=5)
+
+        ttk.Label(form_frame, text="Category ID:").grid(row=0, column=6, padx=5, pady=5)
+        self.prod_cat_entry = ttk.Entry(form_frame, width=5)
+        self.prod_cat_entry.grid(row=0, column=7, padx=5, pady=5)
+
+        ttk.Button(form_frame, text="Add Product", command=self.create_product).grid(row=0, column=8, padx=10, pady=5)
+
         controls = ttk.Frame(frame)
         controls.pack(pady=10)
 
@@ -148,6 +169,32 @@ class ApplicationGUI:
                 self.load_products(None)
             else:
                 messagebox.showwarning("Validation Error", "Quantity must be greater than 0.")
+        else:
+            messagebox.showwarning("Validation Error", "All fields must be filled.")
+
+    def create_product(self):
+        name = self.prod_name_entry.get()
+        price_val = self.prod_price_entry.get()
+        stock_val = self.prod_stock_entry.get()
+        cat_val = self.prod_cat_entry.get()
+
+        if name and price_val and stock_val and cat_val:
+            try:
+                price = float(price_val)
+                stock = int(stock_val)
+                cat_id = int(cat_val)
+
+                product = Product(name, price, stock, cat_id)
+                product.save()
+                messagebox.showinfo("Success", "Product Added!")
+
+                self.prod_name_entry.delete(0, tkinter.END)
+                self.prod_price_entry.delete(0, tkinter.END)
+                self.prod_stock_entry.delete(0, tkinter.END)
+                self.prod_cat_entry.delete(0, tkinter.END)
+                self.load_products(None)
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
         else:
             messagebox.showwarning("Validation Error", "All fields must be filled.")
 

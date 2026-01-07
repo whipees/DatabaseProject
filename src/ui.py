@@ -82,13 +82,13 @@ class ApplicationGUI:
         ttk.Button(controls, text="Refresh Stock", command=lambda: self.load_products(frame)).pack(side='left', padx=10)
         ttk.Button(controls, text="Add Stock (Restock)", command=self.add_product_stock).pack(side='left', padx=10)
 
-        columns = ('ID', 'Name', 'Price', 'Stock', 'Category')
+        columns = ('ID', 'Name', 'Price', 'Stock', 'Category Name')
         self.products_tree = ttk.Treeview(frame, columns=columns, show='headings')
         self.products_tree.heading('ID', text='ID')
         self.products_tree.heading('Name', text='Name')
         self.products_tree.heading('Price', text='Price')
         self.products_tree.heading('Stock', text='Stock')
-        self.products_tree.heading('Category', text='Category ID')
+        self.products_tree.heading('Category Name', text='Category Name')
         self.products_tree.pack(expand=True, fill='both')
         self.load_products(frame)
 
@@ -314,7 +314,14 @@ class ApplicationGUI:
             connection = DatabaseConnection.get_connection()
             if not connection: return
             cursor = connection.cursor()
-            cursor.execute("SELECT product_id, name, price, stock_quantity, category_id FROM products")
+
+            query = """
+                SELECT p.product_id, p.name, p.price, p.stock_quantity, c.name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.category_id
+            """
+            cursor.execute(query)
+
             for row in cursor.fetchall():
                 self.products_tree.insert('', 'end', values=row)
             cursor.close()

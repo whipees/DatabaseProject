@@ -1,3 +1,4 @@
+import re
 from src.database import DatabaseConnection
 
 
@@ -42,7 +43,9 @@ class Customer(ActiveRecord):
     def validate(self):
         if not self.first_name or not self.last_name:
             raise ValueError("Name cannot be empty")
-        if "@" not in self.email:
+
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, self.email):
             raise ValueError("Invalid email format")
 
     def save(self):

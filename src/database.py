@@ -2,7 +2,6 @@ import mysql.connector
 import configparser
 import os
 
-
 class DatabaseConnection:
     _instance = None
 

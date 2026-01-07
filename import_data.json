@@ -1,0 +1,14 @@
+[
+    {
+        "category": "Computers",
+        "name": "Office PC",
+        "price": 12000.00,
+        "stock": 5
+    },
+    {
+        "category": "Peripherals",
+        "name": "Mechanical Keyboard",
+        "price": 1500.00,
+        "stock": 20
+    }
+]

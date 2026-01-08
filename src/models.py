@@ -119,6 +119,23 @@ class Product(ActiveRecord):
         finally:
             cursor.close()
 
+    @staticmethod
+    def delete_product(product_id):
+        connection = DatabaseConnection.get_connection()
+        cursor = connection.cursor()
+        try:
+            cursor.execute("DELETE FROM products WHERE product_id = %s", (product_id,))
+            if cursor.rowcount == 0:
+                raise ValueError("Product not found.")
+            connection.commit()
+        except Exception as e:
+            connection.rollback()
+            if "foreign key constraint fails" in str(e).lower():
+                raise ValueError("Cannot delete product: It is part of existing orders. Delete the orders first.")
+            raise e
+        finally:
+            cursor.close()
+
 
 class Order(ActiveRecord):
     def __init__(self, customer_id, items):

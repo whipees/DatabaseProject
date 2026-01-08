@@ -81,6 +81,7 @@ class ApplicationGUI:
         controls.pack(pady=10)
         ttk.Button(controls, text="Refresh Stock", command=lambda: self.load_products(frame)).pack(side='left', padx=10)
         ttk.Button(controls, text="Add Stock (Restock)", command=self.add_product_stock).pack(side='left', padx=10)
+        ttk.Button(controls, text="Delete Product", command=self.delete_product).pack(side='left', padx=10)
 
         columns = ('ID', 'Name', 'Price', 'Stock', 'Category Name')
         self.products_tree = ttk.Treeview(frame, columns=columns, show='headings')
@@ -271,6 +272,23 @@ class ApplicationGUI:
             try:
                 Product.add_stock(product_id, quantity)
                 messagebox.showinfo("Success", "Stock updated.")
+                self.load_products(None)
+                self.refresh_dropdowns()
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
+
+    def delete_product(self):
+        selected = self.products_tree.selection()
+        if not selected:
+            messagebox.showwarning("Warning", "Select a product to delete.")
+            return
+
+        product_id = self.products_tree.item(selected)['values'][0]
+
+        if messagebox.askyesno("Confirm", f"Delete Product ID {product_id}?"):
+            try:
+                Product.delete_product(product_id)
+                messagebox.showinfo("Success", "Product deleted.")
                 self.load_products(None)
                 self.refresh_dropdowns()
             except Exception as e:

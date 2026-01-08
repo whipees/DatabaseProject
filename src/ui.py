@@ -1,6 +1,7 @@
 import tkinter
 from tkinter import ttk, messagebox, filedialog, simpledialog
 import json
+import csv
 import os
 from src.database import DatabaseConnection
 from src.models import Order, Product, Category, Customer
@@ -29,6 +30,7 @@ class ApplicationGUI:
         self.setup_products_tab()
         self.setup_customers_tab()
         self.setup_report_tab()
+        self.setup_export_tab()
         self.setup_import_tab()
 
     def setup_order_tab(self):
@@ -142,8 +144,7 @@ class ApplicationGUI:
         self.status_combo.pack(side='left', padx=5)
         ttk.Button(controls_frame, text="Update Status", command=self.update_order_status).pack(side='left', padx=5)
 
-        ttk.Button(controls_frame, text="DELETE ORDER (Transaction)", command=self.delete_order).pack(side='right',
-                                                                                                      padx=20)
+        ttk.Button(controls_frame, text="DELETE ORDER", command=self.delete_order).pack(side='right', padx=20)
 
         columns = ('ID', 'Customer', 'Date', 'Status', 'Total')
         self.report_tree = ttk.Treeview(frame, columns=columns, show='headings')
@@ -153,6 +154,17 @@ class ApplicationGUI:
         self.report_tree.heading('Status', text='Status')
         self.report_tree.heading('Total', text='Total')
         self.report_tree.pack(expand=True, fill='both')
+
+    def setup_export_tab(self):
+        frame = ttk.Frame(self.notebook)
+        self.notebook.add(frame, text="Export")
+
+        ttk.Label(frame, text="Export Database Tables to CSV").pack(pady=20)
+
+        ttk.Button(frame, text="Export Products", command=lambda: self.export_csv("products")).pack(pady=10)
+        ttk.Button(frame, text="Export Customers", command=lambda: self.export_csv("customers")).pack(pady=10)
+        ttk.Button(frame, text="Export Orders (Summary)", command=lambda: self.export_csv("view_order_summary")).pack(
+            pady=10)
 
     def setup_import_tab(self):
         frame = ttk.Frame(self.notebook)
@@ -191,8 +203,13 @@ class ApplicationGUI:
 
             c_id = self.customer_map.get(cust_selection)
             p_id = self.product_map.get(prod_selection)
-            qty = int(self.quantity_entry.get())
+            qty_str = self.quantity_entry.get()
 
+            if not qty_str.isdigit():
+                messagebox.showwarning("Validation Error", "Quantity must be a valid number.")
+                return
+
+            qty = int(qty_str)
             if qty <= 0:
                 messagebox.showwarning("Validation Error", "Quantity must be greater than 0.")
                 return
@@ -304,6 +321,7 @@ class ApplicationGUI:
         try:
             Order.update_status(order_id, self.status_var.get())
             self.load_report(None)
+            messagebox.showinfo("Success", f"Order {order_id} updated. Stock adjusted if Cancelled.")
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
@@ -374,6 +392,27 @@ class ApplicationGUI:
         except Exception as e:
             messagebox.showerror("Database Error", str(e))
 
+    def export_csv(self, table_name):
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV Files", "*.csv")])
+        if not file_path: return
+
+        try:
+            conn = DatabaseConnection.get_connection()
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT * FROM {table_name}")
+            rows = cursor.fetchall()
+            headers = [i[0] for i in cursor.description]
+
+            with open(file_path, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(headers)
+                writer.writerows(rows)
+
+            messagebox.showinfo("Success", f"Exported to {file_path}")
+            cursor.close()
+        except Exception as e:
+            messagebox.showerror("Export Error", str(e))
+
     def import_json(self):
         filepath = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
         if not filepath: return
@@ -386,18 +425,25 @@ class ApplicationGUI:
 
             count = 0
             for item in data:
-                required_keys = ['category', 'name', 'price', 'stock']
-                if not all(key in item for key in required_keys):
+                try:
+                    if not all(k in item for k in ('category', 'name', 'price', 'stock')):
+                        continue
+
+                    price = float(item['price'])
+                    stock = int(item['stock'])
+                    if price < 0 or stock < 0:
+                        continue
+
+                    category = Category(item['category'])
+                    category.save()
+
+                    product = Product(item['name'], price, stock, category.category_id)
+                    product.save()
+                    count += 1
+                except:
                     continue
 
-                category = Category(item['category'])
-                category.save()
-
-                product = Product(item['name'], item['price'], item['stock'], category.category_id)
-                product.save()
-                count += 1
-
-            messagebox.showinfo("Success", f"Imported {count} items.")
+            messagebox.showinfo("Success", f"Imported {count} valid items.")
             self.load_products(None)
             self.refresh_dropdowns()
         except Exception as e:

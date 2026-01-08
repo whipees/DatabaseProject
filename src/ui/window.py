@@ -2,9 +2,11 @@ import tkinter
 from tkinter import ttk, messagebox, filedialog, simpledialog
 import json
 import csv
-import os
-from src.database import DatabaseConnection
-from src.models import Order, Product, Category, Customer
+from src.database.connection import DatabaseConnection
+from src.models.order import Order
+from src.models.product import Product
+from src.models.category import Category
+from src.models.customer import Customer
 
 
 class ApplicationGUI:

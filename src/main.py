@@ -7,7 +7,7 @@ lib_path = os.path.join(base_path, 'lib')
 if os.path.exists(lib_path):
     sys.path.append(lib_path)
 
-from src.ui import ApplicationGUI
+from src.ui.window import ApplicationGUI
 
 if __name__ == "__main__":
     root = tkinter.Tk()

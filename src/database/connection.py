@@ -8,7 +8,7 @@ class DatabaseConnection:
     @staticmethod
     def _load_config():
         config = configparser.ConfigParser()
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         config_path = os.path.join(base_path, 'config', 'settings.ini')
 
         if not os.path.exists(config_path):
@@ -70,8 +70,7 @@ class DatabaseConnection:
 
             cursor.execute("SHOW TABLES LIKE 'products'")
             if not cursor.fetchone():
-                print(f"Database '{db_name}' empty. Importing schema...")
-                base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
                 schema_path = os.path.join(base_path, 'sql', 'schema.sql')
 
                 if not os.path.exists(schema_path):

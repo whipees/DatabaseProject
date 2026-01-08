@@ -4,6 +4,9 @@ from src.database.connection import DatabaseConnection
 
 
 class Customer(ActiveRecord):
+    """
+    creates costumer entity
+    """
     def __init__(self, first_name, last_name, email, customer_id=None):
         self.customer_id = customer_id
         self.first_name = first_name
@@ -11,6 +14,9 @@ class Customer(ActiveRecord):
         self.email = email
 
     def validate(self):
+        """
+        validates data, check for exceptions
+        """
         if not self.first_name or not self.last_name:
             raise ValueError("Name cannot be empty")
 
@@ -19,6 +25,9 @@ class Customer(ActiveRecord):
             raise ValueError("Invalid email format")
 
     def save(self):
+        """
+        Inserts a new customer or updates an existing one based on customer_id.
+        """
         self.validate()
         connection = DatabaseConnection.get_connection()
         cursor = connection.cursor()

@@ -3,11 +3,19 @@ from src.database.connection import DatabaseConnection
 
 
 class Category(ActiveRecord):
+    """
+    represents product category
+    """
     def __init__(self, name):
         self.name = name
         self.category_id = None
 
     def save(self):
+        """
+        Checks if a category with the same name exists.
+        If yes, retrieves its ID. If no, creates a new record
+        :return:
+        """
         if not self.name:
             raise ValueError("Category name cannot be empty")
 

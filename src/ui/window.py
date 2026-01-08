@@ -36,6 +36,9 @@ class ApplicationGUI:
         self.setup_import_tab()
 
     def setup_order_tab(self):
+        """
+        setup order tab
+        """
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="New Order")
 
@@ -57,6 +60,10 @@ class ApplicationGUI:
         self.refresh_dropdowns()
 
     def setup_products_tab(self):
+        """
+        setup products tab
+
+        """
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Products")
 
@@ -98,6 +105,9 @@ class ApplicationGUI:
         self.load_products(frame)
 
     def setup_customers_tab(self):
+        """
+        setup customer tab
+        """
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Customers")
 
@@ -130,6 +140,10 @@ class ApplicationGUI:
         self.load_customers(frame)
 
     def setup_report_tab(self):
+        """
+
+        setup report tab
+        """
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Orders Management")
 
@@ -158,6 +172,10 @@ class ApplicationGUI:
         self.report_tree.pack(expand=True, fill='both')
 
     def setup_export_tab(self):
+        """
+
+        setup export tab
+        """
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Export")
 
@@ -169,6 +187,7 @@ class ApplicationGUI:
             pady=10)
 
     def setup_import_tab(self):
+        """sets up import tab """
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Import")
         ttk.Label(frame, text="Expected JSON: [{'category': 'Name', 'name': 'Prod', 'price': 10, 'stock': 5}]").pack(
@@ -176,6 +195,7 @@ class ApplicationGUI:
         ttk.Button(frame, text="Import JSON Data", command=self.import_json).pack(pady=20)
 
     def refresh_dropdowns(self):
+        """refreshes dropdowns from database """
         try:
             conn = DatabaseConnection.get_connection()
             cursor = conn.cursor()
@@ -195,6 +215,10 @@ class ApplicationGUI:
             pass
 
     def create_order(self):
+        """
+        handles new order from inputs
+
+        """
         try:
             cust_selection = self.customer_combo.get()
             prod_selection = self.product_combo.get()
@@ -232,6 +256,9 @@ class ApplicationGUI:
             messagebox.showerror("Error", str(e))
 
     def create_product(self):
+        """
+        handles new product from inputs and its category
+        """
         try:
             name = self.prod_name_entry.get()
             price = self.prod_price_entry.get()
@@ -258,6 +285,10 @@ class ApplicationGUI:
             messagebox.showerror("Error", str(e))
 
     def create_customer(self):
+        """
+
+        handles the creatin of costumer
+        """
         first = self.cust_first_entry.get()
         last = self.cust_last_entry.get()
         email = self.cust_email_entry.get()
@@ -278,6 +309,9 @@ class ApplicationGUI:
             messagebox.showerror("Error", str(e))
 
     def add_product_stock(self):
+        """
+        opens a dialog to add stock
+        """
         selected = self.products_tree.selection()
         if not selected:
             messagebox.showwarning("Warning", "Select a product first.")
@@ -297,6 +331,10 @@ class ApplicationGUI:
                 messagebox.showerror("Error", str(e))
 
     def delete_product(self):
+        """
+
+        deletes the selected product
+        """
         selected = self.products_tree.selection()
         if not selected:
             messagebox.showwarning("Warning", "Select a product to delete.")
@@ -314,6 +352,9 @@ class ApplicationGUI:
                 messagebox.showerror("Error", str(e))
 
     def update_order_status(self):
+        """
+        updates the selected order status
+        """
         selected_item = self.report_tree.selection()
         if not selected_item:
             messagebox.showwarning("Selection Error", "Please select an order.")
@@ -328,6 +369,10 @@ class ApplicationGUI:
             messagebox.showerror("Error", str(e))
 
     def delete_order(self):
+        """
+        deletes the selected order and returns items to stock
+        :return:
+        """
         selected_item = self.report_tree.selection()
         if not selected_item:
             messagebox.showwarning("Warning", "Select an order to delete.")
@@ -346,6 +391,9 @@ class ApplicationGUI:
                 messagebox.showerror("Error", str(e))
 
     def load_products(self, frame):
+        """
+        fetches products from database
+        """
         for item in self.products_tree.get_children():
             self.products_tree.delete(item)
         try:
@@ -367,6 +415,10 @@ class ApplicationGUI:
             messagebox.showerror("Database Error", str(e))
 
     def load_customers(self, frame):
+        """
+        fetches customers from database
+
+        """
         for item in self.customers_tree.get_children():
             self.customers_tree.delete(item)
         try:
@@ -381,6 +433,9 @@ class ApplicationGUI:
             messagebox.showerror("Database Error", str(e))
 
     def load_report(self, frame):
+        """
+        fetches  order summary report from database
+        """
         for item in self.report_tree.get_children():
             self.report_tree.delete(item)
         try:
@@ -395,6 +450,10 @@ class ApplicationGUI:
             messagebox.showerror("Database Error", str(e))
 
     def export_csv(self, table_name):
+        """
+        exports table to csv
+
+        """
         file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV Files", "*.csv")])
         if not file_path: return
 
@@ -416,6 +475,9 @@ class ApplicationGUI:
             messagebox.showerror("Export Error", str(e))
 
     def import_json(self):
+        """
+        imports json file
+        """
         filepath = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
         if not filepath: return
         try:

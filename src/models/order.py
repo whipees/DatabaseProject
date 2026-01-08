@@ -3,11 +3,27 @@ from src.database.connection import DatabaseConnection
 
 
 class Order(ActiveRecord):
+    """
+    Represents an order
+    """
     def __init__(self, customer_id, items):
+        """
+
+        :param customer_id:
+        :param items: List of dictionaries [{'product_id': x, 'quantity': y}]
+        """
         self.customer_id = int(customer_id)
         self.items = items
 
     def save_transaction(self):
+        """
+        Executes a complex transaction:
+        1. Checks if customer exists
+        2. Creates order record
+        3. Iterates through items, checks stock availability
+        4. Creates order_items records
+        5. Updates (decreases) product stock
+        """
         if not self.items:
             raise ValueError("Cannot create empty order")
 
@@ -60,6 +76,9 @@ class Order(ActiveRecord):
 
     @staticmethod
     def update_status(order_id, new_status):
+        """
+        Updates status of an order
+        """
         valid_statuses = ['PENDING', 'PAID', 'SHIPPED', 'CANCELLED']
         if new_status not in valid_statuses:
             raise ValueError("Invalid status")
@@ -100,6 +119,11 @@ class Order(ActiveRecord):
 
     @staticmethod
     def delete_transaction(order_id):
+        """
+        1. Returns items to stock (if order wasn't cancelled already)
+        2. Deletes records from order_items
+        3. Deletes record from orders
+        """
         connection = DatabaseConnection.get_connection()
         try:
             connection.rollback()

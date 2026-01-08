@@ -3,6 +3,9 @@ from src.database.connection import DatabaseConnection
 
 
 class Product(ActiveRecord):
+    """
+    represents product data
+    """
     def __init__(self, name, price, stock_quantity, category_id, product_id=None):
         self.product_id = product_id
         self.name = name
@@ -11,6 +14,9 @@ class Product(ActiveRecord):
         self.category_id = int(category_id)
 
     def validate(self):
+        """
+        validates data, check for exceptions
+        """
         if not self.name:
             raise ValueError("Product name cannot be empty")
         if self.price < 0:
@@ -19,6 +25,9 @@ class Product(ActiveRecord):
             raise ValueError("Stock cannot be negative")
 
     def save(self):
+        """
+        inserts new product or updates
+        """
         self.validate()
         connection = DatabaseConnection.get_connection()
         try:
@@ -41,6 +50,11 @@ class Product(ActiveRecord):
 
     @staticmethod
     def add_stock(product_id, quantity):
+        """
+        increases stock quantity of product
+        :param product_id:  id of product
+        :param quantity: amount of stock quantity
+        """
         if quantity <= 0:
             raise ValueError("Quantity to add must be positive")
 
@@ -58,6 +72,9 @@ class Product(ActiveRecord):
 
     @staticmethod
     def delete_product(product_id):
+        """
+        deletes product from database
+        """
         connection = DatabaseConnection.get_connection()
         cursor = connection.cursor()
         try:

@@ -3,10 +3,18 @@ import configparser
 import os
 
 class DatabaseConnection:
+    """
+    Singleton class for Mysql connection
+    """
     _instance = None
 
     @staticmethod
     def _load_config():
+        """
+        REads config from config file
+
+        :return: dictionary with connection parameters
+        """
         config = configparser.ConfigParser()
         base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         config_path = os.path.join(base_path, 'config', 'settings.ini')
@@ -30,6 +38,11 @@ class DatabaseConnection:
 
     @staticmethod
     def get_connection(db_check=True):
+        """
+        Gets connection or creates if not exist
+        :param db_check:  True: connect to existing database False: connect to server
+        :return: connection object
+        """
         if DatabaseConnection._instance is None or not DatabaseConnection._instance.is_connected():
             try:
                 db_config = DatabaseConnection._load_config()
@@ -52,6 +65,10 @@ class DatabaseConnection:
 
     @staticmethod
     def initialize_database():
+        """
+        Checks if database is already initialized. if not creates one
+        runs schema.sql
+        """
         print("Checking database status...")
         try:
             db_config = DatabaseConnection._load_config()

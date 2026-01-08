@@ -200,9 +200,32 @@ class Order(ActiveRecord):
             raise ValueError("Invalid status")
 
         connection = DatabaseConnection.get_connection()
+        try:
+            connection.rollback()
+        except:
+            pass
+
+        connection.start_transaction()
         cursor = connection.cursor()
         try:
+            cursor.execute("SELECT status FROM orders WHERE order_id = %s", (order_id,))
+            result = cursor.fetchone()
+            if not result:
+                raise ValueError("Order not found")
+            old_status = result[0]
+
+            if old_status == 'CANCELLED' and new_status != 'CANCELLED':
+                raise ValueError("Cannot reactivate a cancelled order. Please create a new one.")
+
             cursor.execute("UPDATE orders SET status = %s WHERE order_id = %s", (new_status, order_id))
+
+            if new_status == 'CANCELLED' and old_status != 'CANCELLED':
+                cursor.execute("SELECT product_id, quantity FROM order_items WHERE order_id = %s", (order_id,))
+                items = cursor.fetchall()
+                for pid, qty in items:
+                    cursor.execute("UPDATE products SET stock_quantity = stock_quantity + %s WHERE product_id = %s",
+                                   (qty, pid))
+
             connection.commit()
         except Exception as e:
             connection.rollback()
@@ -221,12 +244,14 @@ class Order(ActiveRecord):
         connection.start_transaction()
         cursor = connection.cursor()
         try:
-            cursor.execute("SELECT product_id, quantity FROM order_items WHERE order_id = %s", (order_id,))
-            items = cursor.fetchall()
-
-            for product_id, quantity in items:
-                cursor.execute("UPDATE products SET stock_quantity = stock_quantity + %s WHERE product_id = %s",
-                               (quantity, product_id))
+            cursor.execute("SELECT status FROM orders WHERE order_id = %s", (order_id,))
+            status_res = cursor.fetchone()
+            if status_res and status_res[0] != 'CANCELLED':
+                cursor.execute("SELECT product_id, quantity FROM order_items WHERE order_id = %s", (order_id,))
+                items = cursor.fetchall()
+                for product_id, quantity in items:
+                    cursor.execute("UPDATE products SET stock_quantity = stock_quantity + %s WHERE product_id = %s",
+                                   (quantity, product_id))
 
             cursor.execute("DELETE FROM order_items WHERE order_id = %s", (order_id,))
             cursor.execute("DELETE FROM orders WHERE order_id = %s", (order_id,))
